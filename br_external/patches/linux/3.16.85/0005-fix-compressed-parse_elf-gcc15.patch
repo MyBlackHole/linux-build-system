@@ -1,0 +1,39 @@
+From: Sisyphus <sisyphus@linux-build-system>
+Date: Fri, 12 Jun 2026 14:00:00 +0800
+Subject: [PATCH] x86/boot/compressed: fix parse_elf() hang with GCC 15
+
+GCC 15 with -fPIC may over-optimize the overlapping memcpy in
+parse_elf(). Add a compiler barrier before each memcpy to prevent
+the optimizer from reordering or eliding the memory accesses.
+
+Also mark the function noinline to prevent cross-function optimization.
+
+Signed-off-by: Sisyphus <sisyphus@linux-build-system>
+---
+ arch/x86/boot/compressed/misc.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
+index fa2f02bf4c58..d7ca836dd8aa 100644
+--- a/arch/x86/boot/compressed/misc.c
++++ b/arch/x86/boot/compressed/misc.c
+@@ -306,6 +306,7 @@ static void handle_relocations(void *output, unsigned long output_len)
+ #endif
+ 
+ #ifdef CONFIG_RELOCATABLE
++__attribute__((noinline))
+ static void parse_elf(void *output)
+ {
+ #ifdef CONFIG_X86_64
+@@ -346,6 +347,12 @@ static void parse_elf(void *output)
+ 		dest = (void *)(phdr->p_paddr);
+ #endif
++		/*
++		 * Prevent GCC 15+ from optimizing away or reordering
++		 * the overlapping memcpy operations. The output buffer
++		 * is used as both source and destination for ELF segments.
++		 */
++		__asm__ __volatile__("" : : : "memory");
+ 		memcpy(dest,
+ 		       output + phdr->p_offset,
+ 		       phdr->p_filesz);
