@@ -7,3 +7,9 @@ riscv64-*/
 # Buildroot output
 output/
 dl/
+
+# ccache build cache
+.ccache/
+
+# Buildroot source tree
+buildroot/
