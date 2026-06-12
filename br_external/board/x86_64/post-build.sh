@@ -4,6 +4,10 @@ set -e
 BOARD_DIR=$(dirname "$0")
 TARGET_DIR=$1
 
+# Allow dropbear to accept blank password root logins
+mkdir -p "$TARGET_DIR/etc/default"
+echo 'DROPBEAR_ARGS="-B"' > "$TARGET_DIR/etc/default/dropbear"
+
 # Install GRUB BIOS config
 mkdir -p "$TARGET_DIR/boot/grub"
 cp -f "$BOARD_DIR/grub-bios.cfg" "$TARGET_DIR/boot/grub/grub.cfg"
