@@ -1,0 +1,49 @@
+From: Linux Build System <linux-build@example.com>
+Date: Sat, 13 Jun 2026 10:00:00 +0800
+Subject: [PATCH 4/4] include/linux: Fix types.h/stddef.h for C23 compatibility
+
+GCC 15+ defaults to -std=gnu23, which makes 'bool', 'true' and 'false'
+reserved keywords. The Linux kernel defines these via typedef and enum
+in include/linux/types.h and include/linux/stddef.h, which causes build
+failures when C23 is active.
+
+Fix by wrapping the definitions with a C23 guard, so they are only
+provided when the C standard predates C23.
+
+Signed-off-by: Linux Build System <linux-build@example.com>
+
+diff --git a/include/linux/types.h b/include/linux/types.h
+index 0539a3e..aedf7b3 100644
+--- a/include/linux/types.h
++++ b/include/linux/types.h
+@@ -32,7 +32,11 @@ typedef __kernel_timer_t	timer_t;
+ typedef __kernel_clockid_t	clockid_t;
+ typedef __kernel_mqd_t		mqd_t;
+
++#if !defined(__STDC_VERSION__) || __STDC_VERSION__ < 202311L
+ typedef _Bool			bool;
++#else
++#define bool _Bool
++#endif
+
+ typedef __kernel_uid32_t	uid_t;
+ typedef __kernel_gid32_t	gid_t;
+diff --git a/include/linux/stddef.h b/include/linux/stddef.h
+index f465d79..ad4a9ec 100644
+--- a/include/linux/stddef.h
++++ b/include/linux/stddef.h
+@@ -7,9 +7,13 @@
+ #undef NULL
+ #define NULL ((void *)0)
+
++#if !defined(__STDC_VERSION__) || __STDC_VERSION__ < 202311L
+ enum {
+ 	false	= 0,
+ 	true	= 1
+ };
++#else
++#define false false
++#define true true
++#endif
+
+ #undef offsetof

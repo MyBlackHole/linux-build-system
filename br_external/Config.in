@@ -5,3 +5,5 @@ config BR2_PACKAGE_LINUX_BUILD
 	help
 	  Linux Build System is a Buildroot external tree for building Linux
 	  systems across multiple architectures and kernel versions.
+
+endmenu
