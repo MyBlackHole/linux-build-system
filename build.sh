@@ -52,12 +52,23 @@ patch_fakeroot_libpath() {
 defconfig_name() {
     local arch="$1"
     local ver="$2"
-    local major="${ver%%.*}"
-    case "$arch" in
-        x86_64)  echo "linux${major}_x86_64_defconfig" ;;
-        arm)     echo "linux${major}_arm_vexpress_defconfig" ;;
-        aarch64) echo "linux${major}_aarch64_virt_defconfig" ;;
-        riscv64) echo "linux${major}_riscv64_virt_defconfig" ;;
+    local tag="${ver%%-*}"  # "5.10-219" → "5.10", 取前段用作 major
+    local major="${tag%%.*}"
+    # 版本号带横线时用 "5-219" 形式作为 defconfig 名后缀
+    case "$ver" in
+        *-*) local sub="${ver#*-}"
+             case "$arch" in
+                 x86_64)  echo "linux${major}-${sub}_x86_64_defconfig" ;;
+                 arm)     echo "linux${major}-${sub}_arm_vexpress_defconfig" ;;
+                 aarch64) echo "linux${major}-${sub}_aarch64_virt_defconfig" ;;
+                 riscv64) echo "linux${major}-${sub}_riscv64_virt_defconfig" ;;
+             esac ;;
+        *)   case "$arch" in
+                 x86_64)  echo "linux${major}_x86_64_defconfig" ;;
+                 arm)     echo "linux${major}_arm_vexpress_defconfig" ;;
+                 aarch64) echo "linux${major}_aarch64_virt_defconfig" ;;
+                 riscv64) echo "linux${major}_riscv64_virt_defconfig" ;;
+             esac ;;
     esac
 }
 
@@ -65,7 +76,7 @@ defconfig_name() {
 supported_versions() {
     local arch="$1"
     case "$arch" in
-        x86_64)  echo "3.16 4.19 5.10 6.6" ;;
+        x86_64)  echo "3.16 4.19 5.10 5.10-219 6.6" ;;
         arm)     echo "3.16 4.19 5.10 6.6" ;;
         aarch64) echo "4.19 5.10 6.6" ;;
         riscv64) echo "5.10 6.6" ;;
@@ -90,7 +101,8 @@ kernel_full_version() {
     case "$ver" in
         3.16) echo "3.16.85" ;;
         4.19) echo "4.19.325" ;;
-        5.10) echo "5.10.235" ;;
+        5.10)     echo "5.10.235" ;;
+        5.10-219) echo "5.10.219" ;;
         5.15) echo "5.15.179" ;;
         6.1)  echo "6.1.130" ;;
         6.6)  echo "6.6.99"  ;;

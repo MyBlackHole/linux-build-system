@@ -1,21 +1,19 @@
 #!/bin/bash
-# post-build.sh for ARM vexpress
-# Copies kernel image and DTB to output/images
-
 set -eu
 
 BOARD_DIR=$(dirname "$0")
+TARGET_DIR=$1
 
-# Install pre-generated dropbear host keys (avoid entropy stall on first boot)
-# dropbear.mk creates /etc/dropbear as symlink -> /var/run/dropbear; replace with dir
-rm -f "$TARGET_DIR/etc/dropbear"
-mkdir -p "$TARGET_DIR/etc/dropbear"
-cp -f "$BOARD_DIR/../../dropbear/dropbear_"*_host_key "$TARGET_DIR/etc/dropbear/"
+# Install pre-generated OpenSSH host keys (avoid entropy stall on first boot)
+mkdir -p "$TARGET_DIR/etc/ssh"
+cp -f "$BOARD_DIR/../../openssh/ssh_host_"*"_key" "$TARGET_DIR/etc/ssh/"
+cp -f "$BOARD_DIR/../../openssh/ssh_host_"*"_key.pub" "$TARGET_DIR/etc/ssh/"
+chmod 600 "$TARGET_DIR/etc/ssh/ssh_host_"*"_key"
 
-# Allow dropbear to accept blank password root logins
-mkdir -p "$TARGET_DIR/etc/default"
-echo 'DROPBEAR_ARGS="-B"' > "$TARGET_DIR/etc/default/dropbear"
+# Allow root login with empty password for development
+cat >> "$TARGET_DIR/etc/ssh/sshd_config" << 'EOF'
+PermitRootLogin yes
+PermitEmptyPasswords yes
+EOF
 
-# Nothing extra needed - Buildroot handles vexpress DTB automatically
-# when BR2_LINUX_KERNEL_INTREE_DTS_NAME is set
 exit 0
