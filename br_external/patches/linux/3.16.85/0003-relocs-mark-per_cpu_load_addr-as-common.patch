@@ -1,0 +1,30 @@
+From: Linux3 Build Project <linux3@example.com>
+Date: Thu, 11 Jun 2026 12:00:00 +0800
+Subject: [PATCH 3/3] relocs: Mark per_cpu_load_addr with __attribute__((common))
+
+In GCC 10+, the default changed from -fcommon to -fno-common.
+This causes a linker error when building arch/x86/tools/relocs
+because per_cpu_load_addr is defined as a non-static global in
+relocs.c, which is #include'd by both relocs_32.c and relocs_64.c.
+
+With -fno-common, each tentative definition is treated as a unique
+definition, causing a multiple definition error at link time.
+
+Fix by marking per_cpu_load_addr with __attribute__((common)) to
+preserve the traditional behavior that the linker merges multiple
+tentative definitions.
+
+Signed-off-by: Linux3 Build Project <linux3@example.com>
+
+diff -urN a/arch/x86/tools/relocs.c b/arch/x86/tools/relocs.c
+--- a/arch/x86/tools/relocs.c
++++ b/arch/x86/tools/relocs.c
+@@ -695,7 +695,7 @@
+  *
+  */
+ static int per_cpu_shndx	= -1;
+-Elf_Addr per_cpu_load_addr;
++Elf_Addr per_cpu_load_addr __attribute__((common));
+ 
+ static void percpu_init(void)
+ {

@@ -1,0 +1,50 @@
+From: Linux3 Build Project <linux3@example.com>
+Date: Fri, 12 Jun 2026 10:00:00 +0800
+Subject: [PATCH] x86: Add -std=gnu89 to realmode/boot/compressed CFLAGS for
+ GCC 15+
+
+GCC 15+ defaults to -std=gnu23, where 'bool', 'true' and 'false' are
+reserved keywords. The Linux kernel 4.19 defines these in
+include/linux/stddef.h as enum constants and include/linux/types.h as
+typedef, which conflicts with the C23 standard.
+
+The top-level KBUILD_CFLAGS already has -std=gnu89, but several x86
+Makefiles override KBUILD_CFLAGS without including -std=gnu89:
+- arch/x86/Makefile (REALMODE_CFLAGS, used by realmode/rm/ and boot/)
+- arch/x86/boot/compressed/Makefile (its own KBUILD_CFLAGS)
+
+This causes build failures when using GCC 15+:
+
+  include/linux/types.h:30:33: error: 'bool' cannot be defined via 'typedef'
+  include/linux/stddef.h:11:9: error: cannot use keyword 'false' as enumeration constant
+
+Fix this by adding -std=gnu89 to both locations.
+
+Signed-off-by: Linux3 Build Project <linux3@example.com>
+
+diff --git a/arch/x86/Makefile b/arch/x86/Makefile
+index 6523096..cd9f8ed 100644
+--- a/arch/x86/Makefile
++++ b/arch/x86/Makefile
+@@ -34,7 +34,7 @@ M16_CFLAGS	 := $(call cc-option, -m16, $(CODE16GCC_CFLAGS))
+ REALMODE_CFLAGS	:= $(M16_CFLAGS) -g -Os -DDISABLE_BRANCH_PROFILING \
+ 		   -Wall -Wstrict-prototypes -march=i386 -mregparm=3 \
+ 		   -fno-strict-aliasing -fomit-frame-pointer -fno-pic \
+-		   -mno-mmx -mno-sse $(call cc-option,-fcf-protection=none)
++		   -mno-mmx -mno-sse -std=gnu89 $(call cc-option,-fcf-protection=none)
+ 
+ REALMODE_CFLAGS += $(call __cc-option, $(CC), $(REALMODE_CFLAGS), -ffreestanding)
+ REALMODE_CFLAGS += $(call __cc-option, $(CC), $(REALMODE_CFLAGS), -fno-stack-protector)
+diff --git a/arch/x86/boot/compressed/Makefile b/arch/x86/boot/compressed/Makefile
+index 07b922a..6f5fb18 100644
+--- a/arch/x86/boot/compressed/Makefile
++++ b/arch/x86/boot/compressed/Makefile
+@@ -26,7 +26,7 @@ KCOV_INSTRUMENT		:= n
+ targets := vmlinux vmlinux.bin vmlinux.bin.gz vmlinux.bin.bz2 vmlinux.bin.lzma \
+ 	vmlinux.bin.xz vmlinux.bin.lzo vmlinux.bin.lz4
+ 
+-KBUILD_CFLAGS := -m$(BITS) -O2
++KBUILD_CFLAGS := -m$(BITS) -O2 -std=gnu89
+ KBUILD_CFLAGS += -fno-strict-aliasing $(call cc-option, -fPIE, -fPIC)
+ KBUILD_CFLAGS += -DDISABLE_BRANCH_PROFILING
+ cflags-$(CONFIG_X86_32) := -march=i386

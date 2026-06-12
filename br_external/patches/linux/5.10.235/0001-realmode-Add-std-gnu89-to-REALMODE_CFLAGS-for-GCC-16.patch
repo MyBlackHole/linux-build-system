@@ -1,0 +1,34 @@
+From: Linux3 Build Project <linux3@example.com>
+Date: Fri, 12 Jun 2026 09:30:00 +0800
+Subject: [PATCH] realmode: Add -std=gnu89 to REALMODE_CFLAGS for GCC 16+
+
+GCC 16+ defaults to -std=gnu23, where 'bool', 'true' and 'false' are
+reserved keywords. The Linux kernel 5.10 defines these in
+include/linux/stddef.h as enum constants and include/linux/types.h as
+typedef, which conflicts with the C23 standard.
+
+The top-level KBUILD_CFLAGS already has -std=gnu89, but the realmode
+Makefile overrides KBUILD_CFLAGS with REALMODE_CFLAGS which does not
+include -std=gnu89. This causes build failures in arch/x86/realmode/rm/
+and arch/x86/boot/ when using GCC 16+:
+
+  include/linux/stddef.h:11:9: error: cannot use keyword 'false' as enumeration constant
+  include/linux/types.h:30:33: error: 'bool' cannot be defined via 'typedef'
+
+Fix this by adding -std=gnu89 to REALMODE_CFLAGS.
+
+Signed-off-by: Linux3 Build Project <linux3@example.com>
+
+diff --git a/arch/x86/Makefile b/arch/x86/Makefile
+index bb1eb719a726..b69df01bf409 100644
+--- a/arch/x86/Makefile
++++ b/arch/x86/Makefile
+@@ -34,7 +34,7 @@ M16_CFLAGS	 := $(call cc-option, -m16, $(CODE16GCC_CFLAGS))
+ REALMODE_CFLAGS	:= $(M16_CFLAGS) -g -Os -DDISABLE_BRANCH_PROFILING -D__DISABLE_EXPORTS \
+ 		   -Wall -Wstrict-prototypes -march=i386 -mregparm=3 \
+ 		   -fno-strict-aliasing -fomit-frame-pointer -fno-pic \
+-		   -mno-mmx -mno-sse $(call cc-option,-fcf-protection=none)
++		   -mno-mmx -mno-sse -std=gnu89 $(call cc-option,-fcf-protection=none)
+ 
+ REALMODE_CFLAGS += -ffreestanding
+ REALMODE_CFLAGS += -fno-stack-protector

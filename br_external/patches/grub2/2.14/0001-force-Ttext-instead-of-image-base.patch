@@ -1,0 +1,25 @@
+From: Linux3 Build Project <linux3@example.com>
+Date: Thu, 11 Jun 2026 12:00:00 +0800
+Subject: [PATCH] Force use of -Wl,-Ttext instead of -Wl,--image-base
+
+With binutils 2.46+, -Wl,--image-base,<addr> sets the LOAD segment
+base address, but the .text section is placed at <addr> + header_size
+(e.g. 0x9000 -> 0x9074). GRUB expects .text to start at exactly the
+specified address.
+
+Force the -Wl,-Ttext fallback which correctly places the .text section
+at the requested virtual address.
+
+Signed-off-by: Linux3 Build Project <linux3@example.com>
+
+diff -urN a/configure b/configure
+--- a/configure
++++ b/configure
+@@ -40956,7 +40956,7 @@
+ if test "x$ax_cv_check_ldflags___Wl___image_base_0x400000" = xyes
+ then :
+-  TARGET_IMG_BASE_LDOPT="-Wl,--image-base"
++  TARGET_IMG_BASE_LDOPT="-Wl,-Ttext"
+ else $as_nop
+   TARGET_IMG_BASE_LDOPT="-Wl,-Ttext"
+ fi

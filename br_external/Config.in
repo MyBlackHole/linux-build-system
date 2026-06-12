@@ -1,0 +1,7 @@
+menu "Linux Build System Options"
+
+config BR2_PACKAGE_LINUX_BUILD
+	bool "Linux multi-arch build system"
+	help
+	  Linux Build System is a Buildroot external tree for building Linux
+	  systems across multiple architectures and kernel versions.

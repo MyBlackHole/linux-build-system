@@ -1,0 +1,9 @@
+# Build output directories (one per arch-kernel combo)
+x86_64-*/
+aarch64-*/
+arm-*/
+riscv64-*/
+
+# Buildroot output
+output/
+dl/
