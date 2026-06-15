@@ -1,0 +1,43 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sisyphus <sisyphus@ohmyopencode.com>
+Date: Mon, 15 Jun 2026 12:00:00 +0800
+Subject: [PATCH] bundled: add missing linux/time_types.h for kernel < 5.8
+
+strace 7.0 bundled taskstats.h includes <linux/time_types.h> but the
+file is missing from the bundled headers. On kernel < 5.8 the system
+does not provide this header either, causing a build failure.
+
+Add a minimal time_types.h with the definitions needed by taskstats.h
+(struct __kernel_timespec and struct __kernel_itimerspec). Omit the
+legacy timeval/timespec structures that depend on __kernel_old_time_t,
+a type not available in kernel < 5.8.
+
+Signed-off-by: Sisyphus <sisyphus@ohmyopencode.com>
+---
+ bundled/linux/include/uapi/linux/time_types.h | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
+ create mode 100644 bundled/linux/include/uapi/linux/time_types.h
+
+diff --git a/bundled/linux/include/uapi/linux/time_types.h b/bundled/linux/include/uapi/linux/time_types.h
+new file mode 100644
+index 0000000..a5b3c1d
+--- /dev/null
++++ b/bundled/linux/include/uapi/linux/time_types.h
+@@ -0,0 +1,17 @@
++/* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
++#ifndef _UAPI_LINUX_TIME_TYPES_H
++#define _UAPI_LINUX_TIME_TYPES_H
++
++#include <linux/types.h>
++
++struct __kernel_timespec {
++	__kernel_time64_t       tv_sec;
++	long long               tv_nsec;
++};
++
++struct __kernel_itimerspec {
++	struct __kernel_timespec it_interval;
++	struct __kernel_timespec it_value;
++};
++
++#endif /* _UAPI_LINUX_TIME_TYPES_H */
