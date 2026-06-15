@@ -30,6 +30,24 @@ ARCH_DEFAULT_VER["arm"]="6.6"
 ARCH_DEFAULT_VER["aarch64"]="6.6"
 ARCH_DEFAULT_VER["riscv64"]="6.6"
 
+# 检查并清理配置过期的包 stamp。
+# Buildroot 的 make defconfig 会更新 auto.conf，但已存在的 stamp_configured
+# 不会自动失效。当 auto.conf 比某包的 stamp_configured 更新时，说明该包
+# 需要重新配置。
+check_stale_pkg_config() {
+    local output_dir="$1"
+    local pkg_build_dir="$2"
+    local auto_conf="${output_dir}/build/buildroot-config/auto.conf"
+    local stamp_cfg="${pkg_build_dir}/.stamp_configured"
+
+    if [ -f "$auto_conf" ] && [ -f "$stamp_cfg" ]; then
+        if [ "$auto_conf" -nt "$stamp_cfg" ]; then
+            echo "     检测到 ${pkg_build_dir##*/} 配置已过期，清理 stamp 以触发重新配置"
+            rm -f "$pkg_build_dir"/.stamp_{configured,built,installed,staging_installed,target_installed}
+        fi
+    fi
+}
+
 # Patch fakeroot wrapper: 在 LD_LIBRARY_PATH 中插入系统库路径，
 # 防止 Buildroot host/lib 下的 libncursesw.so 与系统 libreadline.so 冲突。
 # Buildroot 的 fakeroot 脚本设置 LD_LIBRARY_PATH 时优先指向 host/lib，
@@ -330,6 +348,17 @@ make BR2_EXTERNAL="$BR_EXTERNAL" \
 
 # Patch fakeroot（如果有之前构建的残留）
 patch_fakeroot_libpath "$OUTPUT_DIR"
+
+# 检查并清理配置过期的关键包
+# 当 auto.conf 比这些包的 stamp_configured 更新时，说明包依赖的配置
+# 发生了变化（如 e2fsprogs 新增 select BR2_PACKAGE_UTIL_LINUX_LIBUUID），
+# 但 Buildroot 不会自动使 stamp 失效，需要手动清理。
+for pkg in util-linux e2fsprogs; do
+    pkg_dir=$(find "$OUTPUT_DIR/build/${pkg}-"* -maxdepth 0 -type d 2>/dev/null || true)
+    if [ -n "$pkg_dir" ]; then
+        check_stale_pkg_config "$OUTPUT_DIR" "$pkg_dir"
+    fi
+done
 
 # 2. 构建
 echo ""
