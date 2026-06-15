@@ -40,6 +40,7 @@ BR2_TARGET_ROOTFS_EXT2_SIZE="120M"
 # Bootloader: none (QEMU direct kernel boot)
 # Post-image script for genimage
 BR2_PACKAGE_HOST_GENIMAGE=y
+BR2_ROOTFS_POST_BUILD_SCRIPT="$(BR2_EXTERNAL_LINUX_BUILD_PATH)/board/aarch64/virt/post-build.sh"
 BR2_ROOTFS_POST_IMAGE_SCRIPT="support/scripts/genimage.sh"
 BR2_ROOTFS_POST_SCRIPT_ARGS="-c $(BR2_EXTERNAL_LINUX_BUILD_PATH)/board/aarch64/virt/genimage.cfg"
 
