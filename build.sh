@@ -179,6 +179,8 @@ run_qemu() {
                 -hda "${rel_dir}/rootfs.ext4" \
                 -append "root=/dev/sda console=ttyS0 nokaslr" \
                 -nographic -smp 4 -enable-kvm \
+                -object rng-random,filename=/dev/urandom,id=rng0 \
+                -device virtio-rng-pci,rng=rng0 \
                 -net "${net_user_args}" \
                 -net nic \
                 "$@"
