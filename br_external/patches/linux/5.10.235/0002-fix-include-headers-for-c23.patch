@@ -32,8 +32,7 @@ diff --git a/include/linux/stddef.h b/include/linux/stddef.h
 index f465d79..ad4a9ec 100644
 --- a/include/linux/stddef.h
 +++ b/include/linux/stddef.h
-@@ -7,9 +7,13 @@
- #undef NULL
+@@ -8,8 +8,13 @@
  #define NULL ((void *)0)
 
 +#if !defined(__STDC_VERSION__) || __STDC_VERSION__ < 202311L
