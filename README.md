@@ -68,6 +68,21 @@ QEMU_EXTRA_DISKS="./1GTEST:raw" ./build.sh qemu x86_64 5.10-219
 QEMU_EXTRA_DISKS="./data1.img:raw,./data2.qcow2:qcow2" ./build.sh qemu x86_64 6.6
 ```
 
+## Rootfs 大小
+
+所有架构的 rootfs 默认为 **10G**（由各 defconfig 中的 `BR2_TARGET_ROOTFS_EXT2_SIZE` 控制）。
+
+对已构建的镜像可在线扩容（无需重构建）：
+```bash
+# 将 rootfs 扩到 20G
+./build.sh resize aarch64 6.6 20G
+
+# 启动 QEMU 后在虚拟机内扩展文件系统
+# x86_64:         resize2fs /dev/sda
+# ARM vexpress:   resize2fs /dev/mmcblk0
+# AArch64/RISC-V: resize2fs /dev/vda
+```
+
 ## 支持的架构与内核版本
 
 | 架构 | QEMU 目标 | 3.16 | 4.19 | 5.10 | 6.6 |

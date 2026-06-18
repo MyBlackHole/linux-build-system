@@ -314,6 +314,7 @@ list_configs() {
     echo "       ./build.sh x86_64 6.6       # 指定 Linux 6.6"
     echo "       ./build.sh aarch64 4.19     # AArch64 + Linux 4.19"
     echo "运行:  ./build.sh qemu <架构> [内核版本]"
+    echo "扩容:  ./build.sh resize <架构> [内核版本] [大小]"
     echo ""
 }
 
@@ -329,6 +330,33 @@ case "${1:-}" in
             exit 1
         fi
         run_qemu "$2" "${3:-}" "${@:4}"
+        exit 0
+        ;;
+    resize)
+        if [ -z "${2:-}" ]; then
+            echo "用法: ./build.sh resize <架构> [内核版本] [大小]"
+            echo "示例: ./build.sh resize aarch64 6.6 10G"
+            exit 1
+        fi
+        arch="$2"
+        kernel_ver="${3:-$(arch_default_version "$arch")}"
+        size="${4:-10G}"
+        output_dir="${PROJECT_DIR}/${arch}-${kernel_ver}"
+        rootfs="${output_dir}/images/rootfs.ext4"
+        if [ ! -f "$rootfs" ]; then
+            echo "错误: 未找到 $rootfs" >&2
+            echo "请先构建: ./build.sh $arch $kernel_ver" >&2
+            exit 1
+        fi
+        echo "扩容 ${rootfs} -> ${size}"
+        qemu-img resize "$rootfs" "$size"
+        echo ""
+        echo "完成！启动 QEMU 后请在虚拟机内运行 resize2fs:"
+        case "$arch" in
+            x86_64)  echo "  resize2fs /dev/sda" ;;
+            arm)     echo "  resize2fs /dev/mmcblk0" ;;
+            aarch64|riscv64) echo "  resize2fs /dev/vda" ;;
+        esac
         exit 0
         ;;
     "")
