@@ -158,6 +158,34 @@ run_qemu() {
     local disk="${QEMU_DISK:-${images}/disk.img}"
     local mem="${QEMU_MEM:-512M}"
 
+    # 额外磁盘设备: QEMU_EXTRA_DISKS 环境变量
+    # 格式: /path/to/disk1.img:format1,/path/to/disk2.img:format2
+    # 其中 :format 可选，默认 raw
+    local extra_disk_args=""
+    if [[ -n "${QEMU_EXTRA_DISKS:-}" ]]; then
+        IFS=',' read -ra disk_entries <<< "$QEMU_EXTRA_DISKS"
+        local disk_idx=0
+        for entry in "${disk_entries[@]}"; do
+            local disk_path="${entry%%:*}"
+            local disk_fmt="${entry#*:}"
+            [[ "$disk_fmt" == "$disk_path" ]] && disk_fmt="raw"
+            case "$arch" in
+                x86_64)
+                    local hd_chars=(b c d)
+                    extra_disk_args="${extra_disk_args} -hd${hd_chars[$disk_idx]} ${disk_path}"
+                    ;;
+                arm)
+                    extra_disk_args="${extra_disk_args} -drive file=${disk_path},if=sd,format=${disk_fmt},index=1"
+                    ;;
+                aarch64|riscv64)
+                    local ed_id="extra_${disk_idx}"
+                    extra_disk_args="${extra_disk_args} -drive file=${disk_path},if=none,format=${disk_fmt},id=${ed_id} -device virtio-blk-device,drive=${ed_id}"
+                    ;;
+            esac
+            disk_idx=$((disk_idx + 1))
+        done
+    fi
+
     # 构建端口映射标志: hostfwd=tcp::2222-:22,hostfwd=tcp::8080-:80
     local netdev_args="user,id=net0"
     for pm in "${port_mappings[@]}"; do
@@ -183,6 +211,7 @@ run_qemu() {
                 -device virtio-rng-pci,rng=rng0 \
                 -net "${net_user_args}" \
                 -net nic \
+                ${extra_disk_args} \
                 "$@"
             ;;
         arm)
@@ -195,6 +224,7 @@ run_qemu() {
                 -netdev "${netdev_args}" \
                 -device virtio-net-device,netdev=net0 \
                 -nographic \
+                ${extra_disk_args} \
                 "$@"
             ;;
         aarch64)
@@ -207,6 +237,7 @@ run_qemu() {
                 -netdev "${netdev_args}" \
                 -device virtio-net-device,netdev=net0 \
                 -nographic \
+                ${extra_disk_args} \
                 "$@"
             ;;
         riscv64)
@@ -219,6 +250,7 @@ run_qemu() {
                 -netdev "${netdev_args}" \
                 -device virtio-net-device,netdev=net0 \
                 -nographic \
+                ${extra_disk_args} \
                 "$@"
             ;;
     esac

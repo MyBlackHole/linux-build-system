@@ -41,6 +41,31 @@ linux/
 
 # 带端口映射（宿主机 5555 → 虚拟机 22）
 ./build.sh qemu x86_64 5.10 5555:22
+
+# 带额外磁盘设备（x86_64 自动使用 IDE 接口，对应 hdb/hdc/hdd）
+QEMU_EXTRA_DISKS="./1GTEST:raw" ./build.sh qemu x86_64 5.10-219
+```
+
+## QEMU 环境变量
+
+`build.sh qemu` 支持以下环境变量自定义启动参数：
+
+| 变量 | 说明 | 默认值 |
+|------|------|--------|
+| `QEMU_MEM` | 虚拟机内存大小 | `512M` |
+| `QEMU_PORTS` | 端口映射（逗号分隔） | `2222:22` |
+| `QEMU_DISK` | 系统盘镜像路径 | `<输出目录>/images/disk.img` |
+| `QEMU_EXTRA_DISKS` | 额外磁盘列表（逗号分隔，`path:format` 格式） | 无 |
+
+`QEMU_EXTRA_DISKS` 中 `:format` 省略时默认为 `raw`。各架构自动适配：
+
+- **x86_64** → IDE 接口（`-hdb ./disk1 -hdc ./disk2 -hdd ./disk3`）
+- **ARM vexpress** → `if=sd`（第二个 SD 控制器）
+- **AArch64 / RISC-V** → `virtio-blk-device`
+
+例如添加多个磁盘：
+```bash
+QEMU_EXTRA_DISKS="./data1.img:raw,./data2.qcow2:qcow2" ./build.sh qemu x86_64 6.6
 ```
 
 ## 支持的架构与内核版本
